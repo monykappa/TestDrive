@@ -1,0 +1,17 @@
+    <!-- Modal for inviting a user -->
+    <div id="inviteModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeInviteModal()">&times;</span>
+            <h2 class="section-title">Invite User to Access Folder</h2>
+            <form id="inviteForm" method="post" action="">
+                {% csrf_token %}
+                <input type="hidden" id="folder_id" name="folder_id">
+                <div class="form-group">
+                    <label for="invited_username">Username:</label>
+                    <input type="text" id="invited_username" name="invited_username" class="form-control"
+                        placeholder="Enter username">
+                </div>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-user-plus"></i> Invite User</button>
+            </form>
+        </div>
+    </div>

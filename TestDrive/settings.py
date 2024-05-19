@@ -116,6 +116,9 @@ USE_I18N = True
 
 USE_TZ = True
 
+LOGIN_URL = 'home:login'
+LOGIN_REDIRECT_URL = 'home:home' 
+LOGOUT_REDIRECT_URL = 'home:home'
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/

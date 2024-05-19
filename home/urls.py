@@ -16,6 +16,11 @@ urlpatterns = [
     path('folder/<int:folder_id>/upload/', views.upload_file_view, name='upload_file'),
     path('folder/<int:folder_id>/invite/', views.InviteUserToFolderView.as_view(), name='invite_user_to_folder'),
     path('invitation/<int:invitation_id>/accept/', views.AcceptFolderInvitationView.as_view(), name='accept_folder_invitation'),
+    
+    path('login/', views.login_user, name='login'),
+    path('logout/', views.logout_user, name='logout'),
+    path('register/', views.register, name='register'),
+
 
 ]
 

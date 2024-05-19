@@ -101,42 +101,7 @@
         margin-right: 5px;
     }
 
-    /* Modal styles */
-    .modal {
-        display: none;
-        position: fixed;
-        z-index: 1;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        overflow: auto;
-        background-color: rgba(0, 0, 0, 0.4);
-    }
-
-    .modal-content {
-        background-color: #fefefe;
-        margin: 15% auto;
-        padding: 20px;
-        border: 1px solid #888;
-        width: 80%;
-        max-width: 500px;
-        border-radius: 8px;
-    }
-
-    .close {
-        color: #aaa;
-        float: right;
-        font-size: 28px;
-        font-weight: bold;
-    }
-
-    .close:hover,
-    .close:focus {
-        color: black;
-        text-decoration: none;
-        cursor: pointer;
-    }
+   
 </style>
 
 <!-- home.html -->
@@ -144,27 +109,31 @@
 
     <h1 class="title">Home Page</h1>
 
-    <!-- Display folders the user has been invited to -->
+    {% if invited_folders %}
     <div class="invited-folders-container">
         <h2 class="section-title">Invited Folders</h2>
         <ul class="folders-list">
             {% for folder in invited_folders %}
-                <li class="folder-item">
-                    <a href="{% url 'home:folder_detail' folder_id=folder.pk %}" class="folder-link">
-                        <i class="fa fa-folder" aria-hidden="true"></i>
-                        {{ folder.name }}
-                    </a>
-                    <button class="btn btn-share" onclick="openInviteModal('{{ folder.pk }}')"><i class="fas fa-share"></i> Share</button>
-                </li>
+            <li class="folder-item">
+                <a href="{% url 'home:folder_detail' folder_id=folder.pk %}" class="folder-link">
+                    <i class="fa fa-folder" aria-hidden="true"></i>
+                    {{ folder.name }}
+                </a>
+                <button class="btn btn-share" onclick="openInviteModal('{{ folder.pk }}')"><i class="fas fa-share"></i>
+                    Share</button>
+            </li>
             {% endfor %}
         </ul>
     </div>
+    {% endif %}
 
-
+    <button class="btn btn-primary" id="openModalBtn"><i class="fas fa-plus"></i> Add Folder</button>
     <!-- Display owned folders -->
-    <!-- Display owned folders -->
+    {% if owned_folders %}
     <div class="owned-folders-container">
+        
         <h2 class="section-title">Owned Folders</h2>
+
         <ul class="folders-list">
             {% for folder in owned_folders %}
             <li class="folder-item">
@@ -178,11 +147,12 @@
             {% endfor %}
         </ul>
     </div>
+    {% endif %}
 
 
     <!-- Display existing folders -->
     <div class="folders-container">
-        <h2 class="section-title">Folders</h2>
+        <h2 class="section-title">My Folders</h2>
         <ul class="folders-list">
             {% for folder in folders %}
             {% if not folder.parent %}
@@ -198,88 +168,26 @@
     </div>
 
 
-<!-- Modal for inviting a user -->
-<div id="inviteModal" class="modal">
-    <div class="modal-content">
-        <span class="close" onclick="closeInviteModal()">&times;</span>
-        <h2 class="section-title">Invite User to Access Folder</h2>
-        <form id="inviteForm" method="post" action="">
-            {% csrf_token %}
-            <input type="hidden" id="folder_id" name="folder_id">
-            <div class="form-group">
-                <label for="invited_username">Username:</label>
-                <input type="text" id="invited_username" name="invited_username" class="form-control" placeholder="Enter username">
-            </div>
-            <button type="submit" class="btn btn-primary"><i class="fas fa-user-plus"></i> Invite User</button>
-        </form>
-    </div>
-</div>
+
 
 
 </div>
 
 
 
-    <!-- Button to Open the Modal -->
-    <div class="add-folder-form">
-        <h2 class="section-title">Add New Folder</h2>
-        <button class="btn btn-primary" id="openModalBtn"><i class="fas fa-plus"></i> Add Folder</button>
-    </div>
-
-    <!-- The Modal -->
-    <div id="myModal" class="modal">
-
-        <!-- Modal content -->
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h2 class="section-title">Create New Folder</h2>
-            <form method="post" action="/" class="folder-form">
-                {% csrf_token %}
-                {{ form.as_p }}
-                <button type="submit" class="btn btn-primary"><i class="fas fa-plus"></i> Create Folder</button>
-            </form>
-        </div>
-
-    </div>
 </div>
+{% include 'home/invite_user_folder.html' %}
+
+{% include 'home/create_folder_modal.html' %}
+
 
 <script>
-
-    // Get the modal
-    var modal = document.getElementById("myModal");
-
-    // Get the button that opens the modal
-    var btn = document.getElementById("openModalBtn");
-
-    // Get the <span> element that closes the modal
-    var span = document.getElementsByClassName("close")[0];
-
-    // When the user clicks the button, open the modal 
-    btn.onclick = function () {
-        modal.style.display = "block";
+    // Open the invite user modal
+    function openInviteModal(folderId) {
+        document.getElementById('inviteModal').style.display = 'block';
+        document.getElementById('folder_id').value = folderId;
+        document.getElementById('inviteForm').action = "/folder/" + folderId + "/invite/";
     }
-
-    // When the user clicks on <span> (x), close the modal
-    span.onclick = function () {
-        modal.style.display = "none";
-    }
-
-    // When the user clicks anywhere outside of the modal, close it
-    window.onclick = function (event) {
-        if (event.target == modal) {
-            modal.style.display = "none";
-        }
-    }
-</script>
-
-<script>
-// Open the invite user modal
-function openInviteModal(folderId) {
-    document.getElementById('inviteModal').style.display = 'block';
-    document.getElementById('folder_id').value = folderId;
-    document.getElementById('inviteForm').action = "/folder/" + folderId + "/invite/";
-}
-
 
 </script>
 

@@ -9,7 +9,42 @@ from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
 import datetime
+from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
+from django.contrib.auth import authenticate, login
 from django.utils import timezone
+from django.contrib.auth import logout
+
+def login_user(request):
+    if request.method == 'POST':
+        form = AuthenticationForm(request, request.POST)
+        if form.is_valid():
+            username = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password')
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                login(request, user)
+                return redirect('home:home')  # Redirect to home:home after successful login
+    else:
+        form = AuthenticationForm()
+    return render(request, 'login.html', {'form': form})
+
+def logout_user(request):
+    logout(request)
+    return redirect('home:home')  # Redirect to home page after logout
+
+def register(request):
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            return redirect('home:home')  # Redirect to home:home after successful registration and login
+    else:
+        form = UserCreationForm()
+    return render(request, 'register.html', {'form': form})
+
 
 
 class FolderDetailView(View):
@@ -94,6 +129,7 @@ class CreateFolderView(View):
             return render(request, "home/create_folder.html", {"form": form, "folders": folders})
         
 
+@method_decorator(login_required, name='dispatch')
 class HomeView(View):
     def get(self, request):
         if request.user.is_authenticated:
