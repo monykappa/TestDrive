@@ -83,9 +83,8 @@
 <div class="container">
     <h1 class="title">Shared With Me</h1>
 
+    <h2 class="section-title">Invited Folders</h2>
     {% if invited_folders %}
-    <div class="invited-folders-container">
-        <h2 class="section-title">Invited Folders</h2>
         <ul class="folders-list">
             {% for folder in invited_folders %}
             <li class="folder-item">
@@ -93,15 +92,30 @@
                     <i class="fa fa-folder" aria-hidden="true"></i>
                     {{ folder.name }}
                 </a>
-                <button class="btn-share" onclick="openInviteModal('{{ folder.pk }}')"><i class="fas fa-share"></i> Share</button>
             </li>
             {% endfor %}
         </ul>
-    </div>
     {% else %}
-    <p class="no-folders">No folders have been shared with you.</p>
+        <p class="no-folders">No folders have been shared with you.</p>
+    {% endif %}
+
+    <h2 class="section-title">Invited Files</h2>
+    {% if invited_files %}
+        <ul class="files-list">
+            {% for file in invited_files %}
+            <li class="file-item">
+                <a href="{{ file.file.url }}" class="file-link">
+                    <i class="fas fa-file"></i> {{ file.name }}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p class="no-files">No files have been shared with you.</p>
     {% endif %}
 </div>
+
+
 
 <script>
     function openInviteModal(folderId) {

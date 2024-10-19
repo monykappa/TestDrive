@@ -65,3 +65,12 @@ class FolderInvitation(models.Model):
 
     def __str__(self):
         return f"Invitation to {self.folder.name} for {self.invited_user.username}" 
+
+class FileInvitation(models.Model):
+    file = models.ForeignKey(File, on_delete=models.CASCADE)
+    invited_user = models.ForeignKey(User, on_delete=models.CASCADE)
+    sender = models.ForeignKey(User, related_name='sent_invitations', on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.invited_user.username} invited to {self.file.name} by {self.sender.username}"

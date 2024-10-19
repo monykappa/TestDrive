@@ -112,12 +112,14 @@
     <h1 class="title">{{ folder.name }}</h1>
 
     <!-- Add Folder Button -->
-    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addFolderModal"><i class="fas fa-plus"></i>
-        Add Folder</button>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addFolderModal">
+        <i class="fas fa-plus"></i> Add Folder
+    </button>
 
     <!-- Upload File Button -->
-    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadFileModal"><i
-            class="fas fa-upload"></i> Upload File</button>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadFileModal">
+        <i class="fas fa-upload"></i> Upload File
+    </button>
 
     <!-- Folders List -->
     <div class="folders-container mt-5">
@@ -128,6 +130,13 @@
                 <a href="{% url 'home:folder_detail' folder_id=subfolder.pk %}" class="folder-link">
                     <i class="fas fa-folder"></i> {{ subfolder.name }}
                 </a>
+
+                <!-- Share Folder Button -->
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#shareFolderModal"
+                    data-folder-id="{{ subfolder.pk }}">
+                    <i class="fas fa-share-alt"></i> Share
+                </button>
+
                 <form method="post" action="{% url 'home:delete_folder' folder_id=subfolder.pk %}"
                     style="display:inline;">
                     {% csrf_token %}
@@ -139,7 +148,6 @@
             {% endfor %}
         </ul>
     </div>
-
 
     <!-- Files List -->
     <div class="files-container">
@@ -157,25 +165,40 @@
                     {% csrf_token %}
                     <button type="submit" class="btn btn-delete"><i class="fas fa-trash"></i> Delete</button>
                 </form>
+                <!-- Share Button -->
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#shareFileModal{{ file.pk }}">
+                    <i class="fas fa-user-plus"></i> Share
+                </button>
+
+                <!-- Share File Modal -->
+                <div class="modal fade" id="shareFileModal{{ file.pk }}" tabindex="-1"
+                    aria-labelledby="shareFileModalLabel{{ file.pk }}" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="shareFileModalLabel{{ file.pk }}">Share File</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                    aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form method="post" action="{% url 'home:share_file' file_id=file.pk %}">
+                                    {% csrf_token %}
+                                    <div class="form-group">
+                                        <input type="text" name="username" class="form-control"
+                                            placeholder="Enter username" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary mt-3"><i class="fas fa-user-plus"></i>
+                                        Share File</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </li>
             {% empty %}
             <li class="no-files">No files available.</li>
             {% endfor %}
         </ul>
-    </div>
-
-
-    <!-- Invite User Form -->
-    <div class="invite-user-form">
-        <h2 class="section-title">Invite User to Access Folder</h2>
-        <form method="post" id="inviteForm" action="{% url 'home:invite_user_to_folder' folder_id=folder.id %}">
-            {% csrf_token %}
-            <div class="form-group">
-                <input type="text" id="invited_username" name="invited_username" class="form-control"
-                    placeholder="Enter username">
-            </div>
-            <button type="submit" class="btn btn-primary"><i class="fas fa-user-plus"></i> Invite User</button>
-        </form>
     </div>
 </div>
 
@@ -218,6 +241,44 @@
         </div>
     </div>
 </div>
+
+<!-- Share Folder Modal -->
+<div class="modal fade" id="shareFolderModal" tabindex="-1" aria-labelledby="shareFolderModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="shareFolderModalLabel">Share Folder</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="post" action="{% url 'home:share_personal_folder' %}">
+                    {% csrf_token %}
+                    <input type="hidden" id="folder-id" name="folder_id">
+                    <div class="form-group">
+                        <label for="username">Enter username to share folder:</label>
+                        <input type="text" id="username" name="username" class="form-control" placeholder="Username"
+                            required>
+                    </div>
+                    <button type="submit" class="btn btn-primary mt-3"><i class="fas fa-share-alt"></i> Share
+                        Folder</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    const shareFolderModal = document.getElementById('shareFolderModal');
+    shareFolderModal.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget; // Button that triggered the modal
+        const folderId = button.getAttribute('data-folder-id'); // Extract folder ID from data-* attribute
+        const folderInput = shareFolderModal.querySelector('#folder-id'); // Hidden input in the modal form
+        folderInput.value = folderId; // Set the folder ID in the form
+    });
+</script>
+
+
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
 <script>

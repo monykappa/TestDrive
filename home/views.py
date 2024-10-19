@@ -48,8 +48,6 @@ def register(request):
         form = UserCreationForm()
     return render(request, 'register.html', {'form': form})
 
-
-
 class FolderDetailView(View):
     def get(self, request, folder_id):
         folder = Folder.objects.get(id=folder_id)
@@ -64,34 +62,61 @@ class FolderDetailView(View):
 
     def post(self, request, folder_id):
         folder = Folder.objects.get(id=folder_id)
-        form = FolderForm(request.POST)
-        if form.is_valid():
-            new_folder = form.save(commit=False)
-            new_folder.owner = request.user
-            new_folder.parent = folder  # Set the parent folder
-            new_folder.save()
-            return redirect(
-                "home:folder_detail", folder_id=folder_id
-            )  # Redirect back to the same folder detail page
-        else:
-            files = folder.files.all()
-            return render(
-                request,
-                "home/folder_detail.html",
-                {"folder": folder, "files": files, "form": form},
-            )
 
+        if 'username' in request.POST:
+            # Share folder functionality
+            username = request.POST.get('username')
+            folder_to_share = Folder.objects.get(id=request.POST.get('folder_id'))  # Get the folder to share
+            
+            try:
+                invited_user = User.objects.get(username=username)
+                FolderInvitation.objects.create(folder=folder_to_share, invited_user=invited_user, sender=request.user)
+                folder_to_share.users_with_access.add(invited_user)
+                messages.success(request, f"Folder '{folder_to_share.name}' shared with {username}.")
+            except User.DoesNotExist:
+                messages.error(request, "User not found.")
         
+        else:
+            # Create subfolder functionality
+            form = FolderForm(request.POST)
+            if form.is_valid():
+                new_folder = form.save(commit=False)
+                new_folder.owner = request.user
+                new_folder.parent = folder  # Set the parent folder
+                new_folder.save()
+
+        # After sharing a folder, fetch updated data and render the same page
+        files = folder.files.all()
+        subfolders = folder.children.all()
+        form = FolderForm()  # Reset the form
+
+        return render(
+            request,
+            "home/folder_detail.html",
+            {"folder": folder, "files": files, "subfolders": subfolders, "form": form},
+        )
+
+
+
 
 @method_decorator(login_required, name='dispatch')
-class SharedFoldersView(View):
+class SharedContentView(View):
     def get(self, request):
         user = request.user
+        
         # Get folders the user has been invited to
         invited_folders = Folder.objects.filter(invitations__invited_user=user).distinct()
-        return render(request, "home/shared_folders.html", {
+        
+        # Get files the user has been invited to
+        invited_files = File.objects.filter(fileinvitation__invited_user=user).distinct()  # Use the related name correctly
+        
+        return render(request, "home/shared_content.html", {
             "invited_folders": invited_folders,
+            "invited_files": invited_files,
         })
+
+
+        
 class SharePersonalFolder(View):
     def post(self, request, *args, **kwargs):
         folder_id = request.POST.get('folder_id')
@@ -169,6 +194,30 @@ class DeleteFolderView(View):
         return redirect('login')  # Redirect unauthenticated users
 
 
+def delete_file(request, file_id):
+    file = get_object_or_404(File, pk=file_id)
+    file.delete()  # Delete the file
+    messages.success(request, "File deleted successfully.")  # Show success message
+    return redirect(request.META.get('HTTP_REFERER', 'home:my_folders'))  # Redirect back
+
+
+class ShareFileView(View):
+    def post(self, request, file_id):
+        file = get_object_or_404(File, pk=file_id)  # Get the file to share
+        username = request.POST.get('username')  # Get the username from the form
+
+        try:
+            invited_user = User.objects.get(username=username)  # Check if user exists
+            # Create the file invitation (You may need to adjust this based on your model)
+            FileInvitation.objects.create(file=file, invited_user=invited_user, sender=request.user)
+            messages.success(request, f"File '{file.name}' shared with {username}.")
+        except User.DoesNotExist:
+            messages.error(request, "User not found.")
+
+        # Redirect back to the referring page (can be customized)
+        return redirect(request.META.get('HTTP_REFERER', 'home:my_folders'))
+    
+    
 def upload_file_view(request, folder_id):
     folder = get_object_or_404(Folder, id=folder_id)
     if request.method == 'POST':
