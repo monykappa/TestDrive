@@ -33,6 +33,14 @@ urlpatterns = [
     path('shared_content/', views.SharedContentView.as_view(), name='shared_content'),
 
 
+# team folders
+    path('team_folders/', views.TeamFolderListView.as_view(), name='team_folders'),
+    path('team_folder/<int:id>/', views.TeamFolderDetailView.as_view(), name='team_folder_detail'),
+    path('team_folders/create/', views.TeamFolderCreateView.as_view(), name='create_team_folder'),
+    path('team_folders/<int:pk>/update/', views.TeamFolderUpdateView.as_view(), name='team_folder_update'),
+    path('team_folders/<int:pk>/delete/',  views.TeamFolderDeleteView.as_view(), name='delete_team_folder'),
+    path('team_folder/<int:pk>/add_member/', views.AddMemberToTeamFolderView.as_view(), name='add_member_to_team_folder'),  # Add this line
+
 ]
 
 

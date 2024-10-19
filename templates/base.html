@@ -48,7 +48,7 @@
                             
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="">Team Folder</a>
+                            <a class="nav-link" href="{% url 'home:team_folders' %}">Team Folder</a>
                         </li>
                     </ul>
                     
@@ -92,13 +92,13 @@
                     <div class="offcanvas-body d-flex flex-column">
                         <ul class="nav flex-column">
                             <li class="nav-item">
-                                <a class="nav-link active" href="">Home</a>
+                                <a href="{% url 'home:my_folders' %}" class="nav-link">My Folders</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="">About</a>
+                                <a href="{% url 'home:shared_content' %}" class="nav-link">Shared with Me</a>                                
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="">Contact</a>
+                                <a class="nav-link" href="{% url 'home:team_folders' %}">Team Folder</a>
                             </li>
                         </ul>
                         <div class="mt-auto">

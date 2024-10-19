@@ -22,3 +22,8 @@ def validate_file_extension(value):
     if not ext.lower() in valid_extensions:
         raise forms.ValidationError('Unsupported file extension.')
     
+
+class TeamFolderForm(forms.ModelForm):
+    class Meta:
+        model = TeamFolder
+        fields = ['name']  # Add any other fields you want to allow users to input

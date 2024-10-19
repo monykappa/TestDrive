@@ -1,9 +1,12 @@
 from gettext import translation
 import json
+from msilib.schema import ListView
+from django.views.generic import ListView, CreateView, DeleteView, UpdateView
 from pyexpat.errors import messages
 from django.contrib import messages
-from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseRedirect, JsonResponse
+from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponseRedirect, JsonResponse
 from django.shortcuts import render, redirect
+from django.urls import reverse, reverse_lazy
 from .models import *
 from django.http import JsonResponse
 from django.views import View
@@ -343,3 +346,117 @@ class AcceptFolderInvitationView(LoginRequiredMixin, View):
         invitation.delete()
         
         return redirect('home:folder_detail', folder_id=folder.id)
+    
+    
+class TeamFolderListView(ListView):
+    model = TeamFolder
+    template_name = 'home/team_folders.html'  # Replace with your actual template
+    context_object_name = 'team_folders'
+
+    def get_queryset(self):
+        # Get all team folders owned by the user
+        owned_folders = TeamFolder.objects.filter(owner=self.request.user)
+        
+        # Get all team folders where the user has access
+        invited_folders = TeamFolder.objects.filter(users_with_access=self.request.user)
+        
+        # Combine the two querysets and return
+        return owned_folders | invited_folders  # Use union to combine querysets
+
+    def get_context_data(self, **kwargs):
+        # Get the default context
+        context = super().get_context_data(**kwargs)
+        
+        # Check if the user is a superuser or has the specific permission
+        context['can_add_team_folder'] = (
+            self.request.user.is_superuser or 
+            self.request.user.has_perm('home.admin_permission')  # Adjust to your app's name
+        )
+        
+        return context
+    
+class TeamFolderDetailView(View):
+    def get(self, request, id):
+        # Get the specific TeamFolder instance
+        folder = get_object_or_404(TeamFolder, id=id)
+        
+        # Retrieve files associated with this TeamFolder
+        files = TeamFolderFile.objects.filter(team_folder=folder)  # Ensure you query TeamFolderFile
+        
+        # No subfolders in TeamFolder as per your model design
+        subfolders = []  # or however you want to handle this
+        
+        return render(request, 'home/team_folder_detail.html', {
+            'folder': folder,
+            'files': files,
+            'subfolders': subfolders,
+        })
+class TeamFolderCreateView(View):
+    def get(self, request):
+        form = TeamFolderForm()
+        return render(request, 'home/team_folders.html', {'form': form})
+
+    def post(self, request):
+        form = TeamFolderForm(request.POST)
+        if form.is_valid():
+            team_folder = form.save(commit=False)
+            team_folder.owner = request.user  # Set the owner to the current user
+            team_folder.save()
+            return redirect('home:team_folders')  # Redirect to the team folders list view
+        # If form is invalid, render the form again with errors
+        return render(request, 'home/team_folders.html', {'form': form})
+
+class TeamFolderUpdateView(LoginRequiredMixin, UpdateView):
+    model = TeamFolder
+    form_class = TeamFolderForm  # Reuse the same form for updating
+    template_name = 'home/team_folder_form.html'  # Template for editing team folders
+    success_url = reverse_lazy('home:team_folder_list')  # Redirect after update
+
+    def get_queryset(self):
+        # Ensure that users can only update their own folders
+        return TeamFolder.objects.filter(owner=self.request.user)
+
+class TeamFolderDeleteView(LoginRequiredMixin, DeleteView):
+    model = TeamFolder
+    success_url = reverse_lazy('home:team_folder_list')  # Redirect after deletion
+
+    def get_queryset(self):
+        # Ensure that users can only delete their own folders
+        return TeamFolder.objects.filter(owner=self.request.user)
+    
+
+# views.py
+class AddMemberToTeamFolderView(View):
+    def post(self, request, pk):
+        folder = get_object_or_404(TeamFolder, pk=pk)
+        username = request.POST.get('username')
+        can_share = request.POST.get('can_share') == 'on'
+        can_create = request.POST.get('can_create') == 'on'
+        can_edit = request.POST.get('can_edit') == 'on'
+        can_delete = request.POST.get('can_delete') == 'on'
+
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            # Handle user not found
+            return redirect('home:team_folder_detail', id=pk)  # Change 'pk' to 'id' here
+
+        permission, created = TeamFolderPermission.objects.get_or_create(
+            team_folder=folder,
+            user=user,
+            defaults={
+                'can_share': can_share,
+                'can_create': can_create,
+                'can_edit': can_edit,
+                'can_delete': can_delete,
+            }
+        )
+
+        if not created:
+            permission.can_share = can_share
+            permission.can_create = can_create
+            permission.can_edit = can_edit
+            permission.can_delete = can_delete
+            permission.save()
+
+        return redirect('home:team_folder_detail', id=pk)  # Change 'pk' to 'id' here

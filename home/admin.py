@@ -8,3 +8,8 @@ admin.site.register(Folder)
 admin.site.register(File)
 admin.site.register(FolderInvitation)
 admin.site.register(FileInvitation)
+admin.site.register(TeamFolder)
+admin.site.register(TeamFolderPermission)
+admin.site.register(TeamFolderFile)
+
+
