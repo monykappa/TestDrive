@@ -40,6 +40,7 @@ urlpatterns = [
     path('team_folders/<int:pk>/update/', views.TeamFolderUpdateView.as_view(), name='team_folder_update'),
     path('team_folders/<int:pk>/delete/',  views.TeamFolderDeleteView.as_view(), name='delete_team_folder'),
     path('team_folder/<int:pk>/add_member/', views.AddMemberToTeamFolderView.as_view(), name='add_member_to_team_folder'),  # Add this line
+    path('edit_permission/<int:folder_id>/<int:user_id>/', views.EditPermissionView.as_view(), name='edit_permission'),
 
 ]
 

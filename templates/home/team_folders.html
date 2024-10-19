@@ -1,8 +1,6 @@
 {% extends 'base.html' %}
-
 {% block content %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css">
-
 
 <style>
     .hover-shadow {
@@ -27,7 +25,6 @@
         background-color: #f8f9fa !important;
     }
 
-    /* Add this new style for the folder link area */
     .folder-link-area {
         position: relative;
         padding: 0.5rem;
@@ -36,6 +33,17 @@
 </style>
 
 <div class="container py-5">
+    {% if messages %}
+    <div class="messages mb-4">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     <!-- Header Section -->
     {% if can_add_team_folder %}
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -46,9 +54,7 @@
     </div>
     {% endif %}
 
-
-
-    <!-- Folders Grid -->
+    <!-- Team Folders Grid -->
     <div class="row g-4">
         {% for folder in team_folders %}
         <div class="col-md-6 col-lg-4">
@@ -66,10 +72,69 @@
                         </div>
                     </div>
                     <div class="mt-3 position-relative">
-                        <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal"
-                            data-bs-target="#addMemberModal_{{ folder.id }}">
-                            <i class="bi bi-person-plus me-1"></i>Add Members
-                        </button>
+                        {% if user == folder.owner or perms.home.admin_permission %}
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button"
+                                id="dropdownMenuButton_{{ folder.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-three-dots"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end"
+                                aria-labelledby="dropdownMenuButton_{{ folder.id }}">
+                                <li>
+                                    <button class="dropdown-item" data-bs-toggle="modal"
+                                        data-bs-target="#addMemberModal_{{ folder.id }}">
+                                        <i class="bi bi-person-plus me-1"></i>Add Members
+                                    </button>
+                                </li>
+                                <li>
+                                    <button class="dropdown-item" data-bs-toggle="modal"
+                                        data-bs-target="#manageMembersModal_{{ folder.id }}">
+                                        <i class="bi bi-person-gear me-1"></i>Manage Members
+                                    </button>
+                                </li>
+                                {% for permission in folder.user_permissions %}
+                                {% if permission.user == user %}
+                                {% if permission.can_delete %}
+                                <li>
+                                    <button class="dropdown-item text-danger" data-bs-toggle="modal"
+                                        data-bs-target="#deleteTeamFolderModal_{{ folder.id }}">
+                                        <i class="bi bi-trash me-1"></i>Delete
+                                    </button>
+                                </li>
+                                {% endif %}
+                                {% endif %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            <i class="bi bi-people me-1"></i>{{ folder.users_with_access.count }} members
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Modal -->
+        <div class="modal fade" id="deleteTeamFolderModal_{{ folder.id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Delete Team Folder</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Are you sure you want to delete the folder "{{ folder.name }}"? This action cannot be undone.
+                        </p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <form method="POST" action="{% url 'home:delete_team_folder' folder.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">Delete</button>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -99,32 +164,36 @@
                                             <div class="form-check">
                                                 <input class="form-check-input" type="checkbox" name="can_share"
                                                     id="can_share_{{ folder.id }}">
-                                                <label class="form-check-label" for="can_share_{{ folder.id }}">Can
-                                                    Share</label>
+                                                <label class="form-check-label" for="can_share_{{ folder.id }}">
+                                                    Can Share
+                                                </label>
                                             </div>
                                         </div>
                                         <div class="col-6">
                                             <div class="form-check">
                                                 <input class="form-check-input" type="checkbox" name="can_create"
                                                     id="can_create_{{ folder.id }}">
-                                                <label class="form-check-label" for="can_create_{{ folder.id }}">Can
-                                                    Create</label>
+                                                <label class="form-check-label" for="can_create_{{ folder.id }}">
+                                                    Can Create
+                                                </label>
                                             </div>
                                         </div>
                                         <div class="col-6">
                                             <div class="form-check">
                                                 <input class="form-check-input" type="checkbox" name="can_edit"
                                                     id="can_edit_{{ folder.id }}">
-                                                <label class="form-check-label" for="can_edit_{{ folder.id }}">Can
-                                                    Edit</label>
+                                                <label class="form-check-label" for="can_edit_{{ folder.id }}">
+                                                    Can Edit
+                                                </label>
                                             </div>
                                         </div>
                                         <div class="col-6">
                                             <div class="form-check">
                                                 <input class="form-check-input" type="checkbox" name="can_delete"
                                                     id="can_delete_{{ folder.id }}">
-                                                <label class="form-check-label" for="can_delete_{{ folder.id }}">Can
-                                                    Delete</label>
+                                                <label class="form-check-label" for="can_delete_{{ folder.id }}">
+                                                    Can Delete
+                                                </label>
                                             </div>
                                         </div>
                                     </div>
@@ -132,48 +201,189 @@
                             </div>
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-outline-secondary"
-                                data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                             <button type="submit" class="btn btn-primary">Add Member</button>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
-        {% endfor %}
-    </div>
-</div>
 
-<!-- Add Team Folder Modal -->
-<div class="modal fade" id="addTeamFolderModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Add Team Folder</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form method="POST" action="{% url 'home:create_team_folder' %}"> <!-- Adjust the URL to point to your create view -->
-                {% csrf_token %}
-                <div class="modal-body">
-                    <div class="mb-4">
-                        <label for="folder_name" class="form-label">Folder Name</label>
-                        <input type="text" class="form-control" id="folder_name" name="name" required> <!-- Ensure the name matches your model field -->
-                        {% if form.name.errors %}
-                            <div class="text-danger">
-                                {{ form.name.errors }}
-                            </div>
+        <!-- Manage Members Modal -->
+        <div class="modal fade" id="manageMembersModal_{{ folder.id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Manage Members - {{ folder.name }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        {% if folder.users_with_access.exists %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Username</th>
+                                        <th>Permissions</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for member in folder.users_with_access.all %}
+                                    <tr>
+                                        <td>
+                                            {{ member.username }}
+                                            {% if member == folder.owner %}
+                                            <span class="badge bg-primary ms-2">Owner</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% for permission in folder.permissions.all %}
+                                            {% if permission.user == member %}
+                                            {% if permission.can_edit %}<span class="badge bg-secondary me-1">Edit</span>{% endif %}
+                                            {% if permission.can_delete %}<span class="badge bg-secondary me-1">Delete</span>{% endif %}
+                                            {% if permission.can_create %}<span class="badge bg-secondary me-1">Create</span>{% endif %}
+                                            {% if permission.can_share %}<span class="badge bg-secondary me-1">Share</span>{% endif %}
+                                            {% if permission.can_manage %}<span class="badge bg-secondary me-1">Manage</span>{% endif %}
+                                            {% endif %}
+                                            {% endfor %}
+                                        </td>
+                                        <td>
+                                            {% if member != folder.owner %}
+                                            <!-- Edit Permission Button -->
+                                            <button class="btn btn-warning btn-sm" data-bs-toggle="modal"
+                                                data-bs-target="#editPermissionModal_{{ member.id }}_{{ folder.id }}">
+                                                <i class="bi bi-pencil"></i> Edit
+                                            </button>
+                                            <!-- Remove Member Button -->
+                                            <form method="POST" action=""
+                                                style="display:inline;">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-danger btn-sm">
+                                                    <i class="bi bi-x-circle"></i> Remove
+                                                </button>
+                                            </form>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <p class="text-muted">No members in this folder.</p>
                         {% endif %}
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Create Folder</button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Edit Permission Modals (outside of the loop) -->
+    {% for folder in team_folders %}
+    {% for member in folder.users_with_access.all %}
+    <div class="modal fade" id="editPermissionModal_{{ member.id }}_{{ folder.id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Permissions for {{ member.username }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-            </form>
+                <form method="post" action="{% url 'home:edit_permission' folder.id member.id %}">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="can_edit_{{ member.id }}"
+                                name="can_edit" {% if permission.can_edit %}checked{% endif %}>
+                            <label class="form-check-label" for="can_edit_{{ member.id }}">Edit</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="can_delete_{{ member.id }}"
+                                name="can_delete" {% if permission.can_delete %}checked{% endif %}>
+                            <label class="form-check-label" for="can_delete_{{ member.id }}">Delete</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="can_create_{{ member.id }}"
+                                name="can_create" {% if permission.can_create %}checked{% endif %}>
+                            <label class="form-check-label" for="can_create_{{ member.id }}">Create</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="can_share_{{ member.id }}"
+                                name="can_share" {% if permission.can_share %}checked{% endif %}>
+                            <label class="form-check-label" for="can_share_{{ member.id }}">Share</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="can_manage_{{ member.id }}"
+                                name="can_manage" {% if permission.can_manage %}checked{% endif %}>
+                            <label class="form-check-label" for="can_manage_{{ member.id }}">Manage</label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
+    {% endfor %}
+    {% endfor %}
+
+    <!-- Remove Member Confirmation Modal -->
+    {% for folder in team_folders %}
+    {% for member in folder.users_with_access.all %}
+    {% if member != folder.owner %}
+    <div class="modal fade" id="removeMemberConfirmModal_{{ folder.id }}_{{ member.id }}" tabindex="-1"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Remove Member</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to remove {{ member.username }} from "{{ folder.name }}"?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <form method="POST" action="">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">Remove</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% endfor %}
+    {% endfor %}
+
+    <!-- Add Team Folder Modal -->
+    {% if can_add_team_folder %}
+    <div class="modal fade" id="addTeamFolderModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create New Team Folder</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="POST" action="{% url 'home:create_team_folder' %}">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="folder_name" class="form-label">Folder Name</label>
+                            <input type="text" class="form-control" id="folder_name" name="name" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Create Folder</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </div>
-
-
-
-{% endblock content %}
+{% endblock %}

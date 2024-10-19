@@ -75,12 +75,14 @@ class TeamFolderPermission(models.Model):
     can_delete = models.BooleanField(default=False)
     can_create = models.BooleanField(default=False)
     can_edit = models.BooleanField(default=False)
+    can_manage = models.BooleanField(default=False)  # New field for managing users
 
     class Meta:
         unique_together = ('team_folder', 'user')  # Ensures a user can't have duplicate permissions for a team folder
 
     def __str__(self):
         return f"{self.user.username}'s permissions for {self.team_folder.name}"
+
 
 # File Model (for files inside team folders)
 class TeamFolderFile(models.Model):

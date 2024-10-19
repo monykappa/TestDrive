@@ -27,3 +27,15 @@ class TeamFolderForm(forms.ModelForm):
     class Meta:
         model = TeamFolder
         fields = ['name']  # Add any other fields you want to allow users to input
+
+class PermissionForm(forms.ModelForm):
+    class Meta:
+        model = TeamFolderPermission
+        fields = ['can_edit', 'can_delete', 'can_create', 'can_share', 'can_manage']
+        widgets = {
+            'can_edit': forms.CheckboxInput(),
+            'can_delete': forms.CheckboxInput(),
+            'can_create': forms.CheckboxInput(),
+            'can_share': forms.CheckboxInput(),
+            'can_manage': forms.CheckboxInput(),
+        }

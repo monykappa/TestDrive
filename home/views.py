@@ -3,6 +3,7 @@ import json
 from msilib.schema import ListView
 from django.views.generic import ListView, CreateView, DeleteView, UpdateView
 from pyexpat.errors import messages
+from django.views.generic.edit import FormMixin
 from django.contrib import messages
 from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponseRedirect, JsonResponse
 from django.shortcuts import render, redirect
@@ -20,6 +21,7 @@ from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from django.contrib.auth import authenticate, login
 from django.utils import timezone
+from django.db.models import Prefetch
 from django.contrib.auth import logout
 
 def login_user(request):
@@ -348,32 +350,80 @@ class AcceptFolderInvitationView(LoginRequiredMixin, View):
         return redirect('home:folder_detail', folder_id=folder.id)
     
     
-class TeamFolderListView(ListView):
+class TeamFolderListView(LoginRequiredMixin, FormMixin, ListView):
     model = TeamFolder
-    template_name = 'home/team_folders.html'  # Replace with your actual template
+    template_name = 'home/team_folders.html'
     context_object_name = 'team_folders'
+    form_class = PermissionForm
 
     def get_queryset(self):
-        # Get all team folders owned by the user
         owned_folders = TeamFolder.objects.filter(owner=self.request.user)
-        
-        # Get all team folders where the user has access
         invited_folders = TeamFolder.objects.filter(users_with_access=self.request.user)
-        
-        # Combine the two querysets and return
-        return owned_folders | invited_folders  # Use union to combine querysets
+
+        return (owned_folders | invited_folders).distinct().prefetch_related(
+            Prefetch(
+                'permissions',
+                queryset=TeamFolderPermission.objects.all(),
+                to_attr='user_permissions'
+            ),
+            'users_with_access'
+        )
 
     def get_context_data(self, **kwargs):
-        # Get the default context
         context = super().get_context_data(**kwargs)
-        
-        # Check if the user is a superuser or has the specific permission
         context['can_add_team_folder'] = (
             self.request.user.is_superuser or 
-            self.request.user.has_perm('home.admin_permission')  # Adjust to your app's name
+            self.request.user.has_perm('home.admin_permission')
         )
-        
         return context
+
+    def post(self, request, *args, **kwargs):
+        form = self.get_form()
+        if form.is_valid():
+            permission_instance = get_object_or_404(TeamFolderPermission, id=request.POST['permission_id'])
+            permission_instance.can_edit = form.cleaned_data['can_edit']
+            permission_instance.can_delete = form.cleaned_data['can_delete']
+            permission_instance.can_create = form.cleaned_data['can_create']
+            permission_instance.can_share = form.cleaned_data['can_share']
+            permission_instance.can_manage = form.cleaned_data['can_manage']
+            permission_instance.save()
+            return self.form_valid(form)
+        else:
+            return self.form_invalid(form)
+
+class EditPermissionView(LoginRequiredMixin, View):
+    def post(self, request, folder_id, member_id):
+        # Get the folder and member objects
+        folder = get_object_or_404(TeamFolder, id=folder_id)
+        member = get_object_or_404(User, id=member_id)
+        
+        # Check if the user is allowed to edit permissions
+        if not request.user == folder.owner:  # You can customize this check
+            messages.error(request, "You do not have permission to edit permissions.")
+            return redirect('team_folders')
+
+        # Update permissions based on the form data
+        can_edit = request.POST.get('can_edit') == 'on'
+        can_delete = request.POST.get('can_delete') == 'on'
+        can_create = request.POST.get('can_create') == 'on'
+        can_share = request.POST.get('can_share') == 'on'
+        can_manage = request.POST.get('can_manage') == 'on'
+
+        # Update or create the permission object
+        permission, created = TeamFolderPermission.objects.update_or_create(
+            user=member,
+            team_folder=folder,
+            defaults={
+                'can_edit': can_edit,
+                'can_delete': can_delete,
+                'can_create': can_create,
+                'can_share': can_share,
+                'can_manage': can_manage,
+            }
+        )
+
+        messages.success(request, f"Permissions for {member.username} updated successfully.")
+        return redirect('team_folders')  # Redirect to the appropriate page
     
 class TeamFolderDetailView(View):
     def get(self, request, id):
@@ -391,6 +441,8 @@ class TeamFolderDetailView(View):
             'files': files,
             'subfolders': subfolders,
         })
+        
+        
 class TeamFolderCreateView(View):
     def get(self, request):
         form = TeamFolderForm()
@@ -418,12 +470,11 @@ class TeamFolderUpdateView(LoginRequiredMixin, UpdateView):
 
 class TeamFolderDeleteView(LoginRequiredMixin, DeleteView):
     model = TeamFolder
-    success_url = reverse_lazy('home:team_folder_list')  # Redirect after deletion
+    success_url = reverse_lazy('home:team_folders')  # Redirect after deletion
 
     def get_queryset(self):
         # Ensure that users can only delete their own folders
         return TeamFolder.objects.filter(owner=self.request.user)
-    
 
 # views.py
 class AddMemberToTeamFolderView(View):
