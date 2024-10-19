@@ -1,0 +1,212 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" 
+      integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" 
+      crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+<style>
+    /* CSS styles */
+    .container {
+        max-width: 800px;
+        margin: 20px auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+        border-radius: 8px;
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .title {
+        text-align: center;
+        color: #333;
+        margin-bottom: 20px;
+    }
+
+    .folders-list {
+        list-style-type: none;
+        padding: 0;
+    }
+
+    .folder-item {
+        margin-bottom: 10px;
+        background-color: #fff;
+        padding: 15px;
+        border-radius: 6px;
+        box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer; /* Change cursor to pointer */
+    }
+
+    .folder-item:hover {
+        transform: scale(1.02);
+    }
+
+    .folder-link {
+        text-decoration: none;
+        color: #007bff;
+        font-weight: bold;
+    }
+
+    .folder-link:hover {
+        text-decoration: underline;
+    }
+
+    .no-folders {
+        text-align: center;
+        color: #666;
+    }
+
+    .fa-folder {
+        margin-right: 8px;
+    }
+
+    .btn-delete {
+        background-color: #dc3545;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    .btn-delete:hover {
+        background-color: #c82333;
+    }
+
+    .btn-add-folder {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-bottom: 20px;
+    }
+
+    .btn-add-folder:hover {
+        background-color: #0056b3;
+    }
+
+    .add-folder-form {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .folder-input {
+        flex: 1;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        margin-right: 10px;
+    }
+
+    /* Modal Styles */
+    .modal {
+        display: none; /* Hidden by default */
+        position: fixed; /* Stay in place */
+        z-index: 1; /* Sit on top */
+        left: 0;
+        top: 0;
+        width: 100%; /* Full width */
+        height: 100%; /* Full height */
+        overflow: auto; /* Enable scroll if needed */
+        background-color: rgb(0,0,0); /* Fallback color */
+        background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+    }
+
+    .modal-content {
+        background-color: #fefefe;
+        margin: 15% auto; /* 15% from the top and centered */
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%; /* Could be more or less, depending on screen size */
+    }
+
+    .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+    }
+
+    .close:hover,
+    .close:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
+    }
+</style>
+
+
+<div class="container">
+    <h1 class="title">My Folders</h1>
+    
+    <div class="add-folder-form">
+        <form method="post" action="{% url 'home:add_folder' %}" style="display:inline;">
+            {% csrf_token %}
+            <input type="text" name="folder_name" placeholder="New Folder Name" class="folder-input" required>
+            <button type="submit" class="btn-add-folder">Add Folder</button>
+        </form>
+    </div>
+
+    <ul class="folders-list">
+        {% for folder in my_folders %}
+        <li class="folder-item" data-folder-id="{{ folder.pk }}">
+            <a href="{% url 'home:folder_detail' folder_id=folder.pk %}" class="folder-link">
+                <i class="fa fa-folder" aria-hidden="true"></i>
+                {{ folder.name }}
+            </a>
+            <form method="post" action="{% url 'home:delete_folder' folder.pk %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn-delete"><i class="fa fa-trash"></i> Delete</button>
+            </form>
+
+            <!-- Share button triggers modal -->
+            <button class="btn-share" onclick="openShareModal('{{ folder.pk }}')">Share</button>
+        </li>
+        {% empty %}
+        <li class="no-folders">No folders available.</li>
+        {% endfor %}
+    </ul>
+</div>
+
+<!-- Modal Structure -->
+<div id="shareModal" class="modal" style="display:none;">
+    <div class="modal-content">
+        <h4>Share Folder</h4>
+        <form method="post" action="{% url 'home:share_personal_folder' %}" style="display:inline;">
+            {% csrf_token %}
+            <input type="hidden" name="folder_id" id="modalFolderId" value="">
+            <input type="text" name="username" placeholder="Enter username" required>
+            <button type="submit" class="btn-share">Share</button>
+        </form>
+        
+    </div>
+    <div class="modal-footer">
+        <button onclick="closeShareModal()" class="modal-close">Close</button>
+    </div>
+</div>
+
+
+
+<script>
+    function openShareModal(folderId) {
+        // Set the folder ID in the modal form
+        document.getElementById('modalFolderId').value = folderId;
+        // Display the modal
+        document.getElementById('shareModal').style.display = 'block';
+    }
+
+    function closeShareModal() {
+        // Hide the modal
+        document.getElementById('shareModal').style.display = 'none';
+    }
+</script>
+
+
+{% endblock %}

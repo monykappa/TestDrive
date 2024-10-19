@@ -1,75 +1,128 @@
-{% load static %}
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cloud Drive</title>
-    <!-- Add the Bootstrap CSS -->
-    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
-    <script src="{% static 'js/jquery.slim.min.js' %}"></script>
-    <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
-    </script>
+    <title>{% block title %}Base{% endblock %}</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <style>
+        @media (min-width: 992px) {
+            .sidebar-nav {
+                display: none;
+            }
+        }
+        .offcanvas {
+            max-width: 250px;
+        }
+        .content {
+            padding: 20px;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 10px 0;
+        }
+    </style>
 </head>
-
 <body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar for larger screens -->
+            <nav class="col-lg-2 d-none d-lg-block bg-light sidebar">
+                <div class="position-sticky pt-3 d-flex flex-column vh-100">
+                    <a href="" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto link-dark text-decoration-none">
+                        <img src="/path/to/your/logo.png" alt="Logo" width="40" height="40" class="me-2">
+                        <span class="fs-4">Your Site</span>
+                    </a>
+                    <hr>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="">Recent Files</a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{% url 'home:my_folders' %}" class="nav-link">My Folders</a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{% url 'home:shared_folders' %}" class="nav-link">Shared with Me</a>
+                            
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="">Team Folder</a>
+                        </li>
+                    </ul>
+                    
+                    <div class="mt-auto">
+                        <a href="" class="btn btn-primary w-100">Admin Console</a>
+                    </div>
+                </div>
+            </nav>
 
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <div class="container">
-            <a class="navbar-brand" href="#">Cloud Drive</a>
-            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
-                aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarSupportedContent">
-                <ul class="navbar-nav mr-auto">
-                    <li class="nav-item active">
-                        <a class="nav-link" href="{% url 'home:home' %}">Home <span class="sr-only">(current)</span></a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">Features</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">Pricing</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">About</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">Contact</a>
-                    </li>
-                </ul>
-                <ul class="navbar-nav ml-auto">
-                    {% if user.is_authenticated %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="#"><b>{{ user.username }}</b></a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link btn bg-danger text-light" href="{% url 'home:logout' %}">Logout</a>
-                        </li>
-                    {% else %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'home:login' %}">Login</a>
-                        </li>
-                    {% endif %}
-                </ul>
-                
+            <!-- Main content -->
+            <main class="col-lg-10 ms-sm-auto px-md-4">
+                <!-- Navbar -->
+                <nav class="navbar navbar-expand-lg navbar-light bg-light">
+                    <div class="container-fluid">
+                        <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar">
+                            <span class="navbar-toggler-icon"></span>
+                        </button>
+                        <a href="" class="navbar-brand d-lg-none">Your Site</a>
+                        <div class="d-flex">
+                            <div class="dropdown">
+                                <a href="#" class="d-flex align-items-center link-dark text-decoration-none dropdown-toggle" id="dropdownUser2" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <img src="https://github.com/mdo.png" alt="" width="32" height="32" class="rounded-circle me-2">
+                                    <strong>{{ user.username|default:"Guest" }}</strong>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end text-small shadow" aria-labelledby="dropdownUser2">
+                                    <li><a class="dropdown-item" href="">Profile</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="{% url 'home:logout' %}">Logout</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </nav>
 
-            </div>
+                <!-- Offcanvas Sidebar for smaller screens -->
+                <div class="offcanvas offcanvas-start" tabindex="-1" id="sidebar" aria-labelledby="sidebarLabel">
+                    <div class="offcanvas-header">
+                        <h5 class="offcanvas-title" id="sidebarLabel">Menu</h5>
+                        <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                    </div>
+                    <div class="offcanvas-body d-flex flex-column">
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link active" href="">Home</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="">About</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="">Contact</a>
+                            </li>
+                        </ul>
+                        <div class="mt-auto">
+                            <a href="" class="btn btn-primary w-100">Admin Console</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Page content -->
+                <div class="content">
+                    {% block content %}{% endblock %}
+                </div>
+
+                <!-- Footer -->
+                <footer class="footer mt-auto py-3">
+                    <div class="container text-center">
+                        <span class="text-muted">&copy; 2024 Your Company. All rights reserved.</span>
+                    </div>
+                </footer>
+            </main>
         </div>
-    </nav>
-    <!-- Main Content -->
-    <main>
-        {% block content %}
+    </div>
 
-        {% endblock content %}
-    </main>
-
-
-    <script src="{% static 'js/popper.min.js' %}"></script>
-    <script src="{% static 'js/bootstrap.min.js' %}"></script>
-
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-
 </html>

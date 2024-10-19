@@ -1,5 +1,8 @@
 from gettext import translation
-from django.http import HttpResponseBadRequest, HttpResponseRedirect, JsonResponse
+import json
+from pyexpat.errors import messages
+from django.contrib import messages
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseRedirect, JsonResponse
 from django.shortcuts import render, redirect
 from .models import *
 from django.http import JsonResponse
@@ -79,6 +82,92 @@ class FolderDetailView(View):
             )
 
         
+
+@method_decorator(login_required, name='dispatch')
+class SharedFoldersView(View):
+    def get(self, request):
+        user = request.user
+        # Get folders the user has been invited to
+        invited_folders = Folder.objects.filter(invitations__invited_user=user).distinct()
+        return render(request, "home/shared_folders.html", {
+            "invited_folders": invited_folders,
+        })
+class SharePersonalFolder(View):
+    def post(self, request, *args, **kwargs):
+        folder_id = request.POST.get('folder_id')
+        folder = get_object_or_404(Folder, pk=folder_id)
+        username = request.POST.get('username')
+        
+        try:
+            invited_user = User.objects.get(username=username)
+            # Create the folder invitation
+            FolderInvitation.objects.create(
+                folder=folder,
+                invited_user=invited_user,
+                sender=request.user
+            )
+            # Optionally add the invited user to folder's access list
+            folder.users_with_access.add(invited_user)
+            messages.success(request, f"Folder shared with {username}.")  # Correct usage
+        except User.DoesNotExist:
+            messages.error(request, "User not found.")  # Correct usage
+        
+        # Redirect back to the folder list
+        return redirect('home:my_folders')
+
+class AddFolderView(View):
+    def post(self, request):
+        if request.user.is_authenticated:
+            folder_name = request.POST.get('folder_name')
+            if folder_name:
+                Folder.objects.create(name=folder_name, owner=request.user)  # Adjust as per your model structure
+                return redirect('home:my_folders')  # Redirect back to the folders page
+        return HttpResponse("Unauthorized", status=401)  # Or handle accordingly
+    
+class MyFoldersView(View):
+    def get(self, request):
+        if request.user.is_authenticated:
+            # Get the user's folders without a parent
+            my_folders = Folder.objects.filter(owner=request.user, parent=None)
+            return render(request, 'home/my_folders.html', {'my_folders': my_folders})
+        else:
+            return redirect('login')  # Redirect unauthenticated users
+
+class ShareFolderView(View):
+    def post(self, request, folder_id):
+        # Get the folder to share
+        folder = get_object_or_404(Folder, pk=folder_id)
+
+        # Get the username from the request
+        username = request.POST.get('username')
+
+        try:
+            # Find the user to share the folder with
+            user_to_share = User.objects.get(username=username)
+
+            # Check if the user already has access
+            if user_to_share in folder.users_with_access.all():
+                messages.warning(request, f"{username} already has access to this folder.")
+            else:
+                # Add the user to the folder's access list
+                folder.users_with_access.add(user_to_share)
+                messages.success(request, f"Folder shared with {username} successfully!")
+        except User.DoesNotExist:
+            messages.error(request, f"User '{username}' does not exist.")
+
+        return redirect('home:folder_detail', pk=folder.pk)  # Redirect to folder detail page
+    
+
+class DeleteFolderView(View):
+    def post(self, request, folder_id):
+        if request.user.is_authenticated:
+            folder = get_object_or_404(Folder, pk=folder_id, owner=request.user)
+            parent_folder_id = folder.parent.id if folder.parent else None  # Get the parent folder ID
+            folder.delete()
+            # Redirect back to the parent folder's detail view or my_folders if no parent
+            return redirect('home:folder_detail', folder_id=parent_folder_id) if parent_folder_id else redirect('home:my_folders')
+        return redirect('login')  # Redirect unauthenticated users
+
 
 def upload_file_view(request, folder_id):
     folder = get_object_or_404(Folder, id=folder_id)

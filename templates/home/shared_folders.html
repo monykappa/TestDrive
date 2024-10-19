@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" 
+      integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" 
+      crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+<style>
+    /* CSS styles */
+    .container {
+        max-width: 800px;
+        margin: 20px auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+        border-radius: 8px;
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .title {
+        text-align: center;
+        color: #333;
+        margin-bottom: 20px;
+    }
+
+    .invited-folders-container {
+        margin-top: 30px;
+    }
+
+    .folders-list {
+        list-style-type: none;
+        padding: 0;
+    }
+
+    .folder-item {
+        margin-bottom: 10px;
+        background-color: #fff;
+        padding: 15px;
+        border-radius: 6px;
+        box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .folder-item:hover {
+        transform: scale(1.02);
+    }
+
+    .folder-link {
+        text-decoration: none;
+        color: #007bff;
+        font-weight: bold;
+    }
+
+    .folder-link:hover {
+        text-decoration: underline;
+    }
+
+    .no-folders {
+        text-align: center;
+        color: #666;
+    }
+
+    .fa-folder {
+        margin-right: 8px;
+    }
+
+    .btn-share {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    .btn-share:hover {
+        background-color: #0056b3;
+    }
+</style>
+
+<div class="container">
+    <h1 class="title">Shared With Me</h1>
+
+    {% if invited_folders %}
+    <div class="invited-folders-container">
+        <h2 class="section-title">Invited Folders</h2>
+        <ul class="folders-list">
+            {% for folder in invited_folders %}
+            <li class="folder-item">
+                <a href="{% url 'home:folder_detail' folder_id=folder.pk %}" class="folder-link">
+                    <i class="fa fa-folder" aria-hidden="true"></i>
+                    {{ folder.name }}
+                </a>
+                <button class="btn-share" onclick="openInviteModal('{{ folder.pk }}')"><i class="fas fa-share"></i> Share</button>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% else %}
+    <p class="no-folders">No folders have been shared with you.</p>
+    {% endif %}
+</div>
+
+<script>
+    function openInviteModal(folderId) {
+        // Implement the modal opening logic here, possibly setting the folderId for sharing
+        alert('Share functionality for folder ID: ' + folderId);
+    }
+</script>
+
+{% endblock %}
